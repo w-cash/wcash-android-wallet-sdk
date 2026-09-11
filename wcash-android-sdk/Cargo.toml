@@ -1,0 +1,23 @@
+[package]
+name = "wcash-android-sdk"
+version = "0.1.0"
+authors = ["Wcash developers"]
+description = "Minimal JNI primitives for the Wcash Android SDK"
+repository = "https://github.com/w-cash/wcash-android-wallet-sdk"
+license = "MIT"
+edition = "2024"
+rust-version = "1.92"
+publish = false
+
+[dependencies]
+jni = { version = "0.21", default-features = false }
+secrecy = "0.8"
+wcash_wallet_core = { git = "https://github.com/w-cash/librustzcash", rev = "688dc1d2157b8bef431e5e6fe7b0acb90fc4b363" }
+zip32 = "0.2"
+
+[lib]
+name = "wcashwalletsdk"
+path = "src/main/rust/lib.rs"
+crate-type = ["cdylib"]
+
+[workspace]

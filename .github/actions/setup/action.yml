@@ -97,10 +97,11 @@ runs:
         # crates) and `registry/` is crates.io content; both are public and safe to share across
         # runs, including with pull requests from forks.
         #
-        # `backend-lib/target` holds compiled rlib/rmeta output and is too expensive to rebuild
-        # every run, so it is cached alongside the source and registry content.
+        # The native crate target directories hold compiled rlib/rmeta output and are too
+        # expensive to rebuild every run, so they are cached with the registry content.
         path: |
           backend-lib/target
+          wcash-android-sdk/target
           ~/.cargo/bin
           ~/.cargo/git
           ~/.cargo/registry/index
@@ -108,8 +109,8 @@ runs:
           ~/.cargo/registry/src
         # Bump the `v3` prefix only when restoring an older archive would be harmful rather
         # than merely stale: the exact key already changes with this file and the lockfile, and
-        # the prefix in `restore-keys` is what keeps a warm `backend-lib/target` across them.
-        key: ${{ runner.os }}-rust-v3-${{ hashFiles(format('{0}{1}', github.workspace, '/backend-lib/Cargo.lock'), format('{0}{1}', github.workspace, '/backend-lib/Cargo.toml'), format('{0}{1}', github.workspace, '/backend-lib/build.gradle.kts'), format('{0}{1}', github.workspace, '/backend-lib/build.rs'), format('{0}{1}', github.workspace, '/rust-toolchain.toml'), format('{0}{1}', github.workspace, '/gradle.properties'), format('{0}{1}', github.workspace, '/.github/actions/setup/action.yml')) }}
+        # the prefix in `restore-keys` keeps warm native target directories across them.
+        key: ${{ runner.os }}-rust-v3-${{ hashFiles(format('{0}{1}', github.workspace, '/backend-lib/Cargo.lock'), format('{0}{1}', github.workspace, '/backend-lib/Cargo.toml'), format('{0}{1}', github.workspace, '/backend-lib/build.gradle.kts'), format('{0}{1}', github.workspace, '/backend-lib/build.rs'), format('{0}{1}', github.workspace, '/wcash-android-sdk/Cargo.lock'), format('{0}{1}', github.workspace, '/wcash-android-sdk/Cargo.toml'), format('{0}{1}', github.workspace, '/wcash-android-sdk/build.gradle.kts'), format('{0}{1}', github.workspace, '/rust-toolchain.toml'), format('{0}{1}', github.workspace, '/gradle.properties'), format('{0}{1}', github.workspace, '/.github/actions/setup/action.yml')) }}
         restore-keys: |
           ${{ runner.os }}-rust-v3-
 
@@ -122,7 +123,7 @@ runs:
       if: steps.gradle-dependency-cache-restore.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        ./gradlew dependencies :sdk-lib:dependencies :demo-app:dependencies
+        ./gradlew dependencies :sdk-lib:dependencies :wcash-android-sdk:dependencies :demo-app:dependencies
     - name: Gradle Build
       if: github.event.pull_request.head.sha == '' && (steps.gradle-binary-cache-restore.outputs.cache-hit != 'true' || steps.gradle-dependency-cache-restore.outputs.cache-hit != 'true' || (inputs.rust-cache == 'true' && steps.rust-cache.outputs.cache-hit != 'true') || steps.gradle-build-cache-restore.outputs.cache-hit != 'true')
       env:

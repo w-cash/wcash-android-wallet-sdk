@@ -1,0 +1,11 @@
+# AndroidX Test references compile-time-only Error Prone annotations. They are not present on an
+# Android runtime and have no behavior for R8 to preserve in the instrumentation APK.
+-dontwarn com.google.errorprone.annotations.**
+
+# The instrumentation runner and JUnit discover these classes reflectively. These rules affect
+# only the test APK; the separately inspected consumer application remains fully minified.
+-keep class androidx.test.** { *; }
+-keep class org.junit.** { *; }
+-keep class org.hamcrest.** { *; }
+-keep class kotlin.** { *; }
+-keep class cash.w.sdk.consumertest.WcashMinifiedConsumerTest { *; }

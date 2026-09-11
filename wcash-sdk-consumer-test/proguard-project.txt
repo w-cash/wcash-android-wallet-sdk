@@ -1,0 +1,7 @@
+# This fixture intentionally adds no Wcash keep rules. Its release build must consume every
+# required rule from the wcash-android-sdk AAR exactly as a third-party wallet would.
+
+# Android instrumentation and the tested app use separate optimized APKs in one process. The
+# runner's Kotlin classes are de-duplicated against this APK before R8, so retain the runtime here
+# for the release-only test fixture. This is test infrastructure, not a Wcash SDK consumer rule.
+-keep class kotlin.** { *; }

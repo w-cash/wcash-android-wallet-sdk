@@ -1,0 +1,18 @@
+-keepparameternames
+-keepattributes SourceFile,LineNumberTable
+
+# A minified library must retain every documented app-facing type and member.
+-keep public class cash.w.sdk.** { public protected *; }
+
+# Seed storage, constructors, and package-only copy operations must retain their source visibility
+# in the published AAR. The release build deliberately uses the non-access-modifying R8 defaults.
+-keep class cash.w.sdk.WcashWalletSeed { *; }
+-keep class cash.w.sdk.WcashSecretSeedBytes { *; }
+
+-keep class cash.w.sdk.internal.jni.WcashNativeBridge { *; }
+-keep class cash.w.sdk.internal.jni.JniWcashAddress { *; }
+-keep class cash.w.sdk.internal.jni.JniWcashTransparentP2pkhAddress { *; }
+-keepclasseswithmembernames,includedescriptorclasses class cash.w.sdk.internal.jni.** {
+    native <methods>;
+}
+-keepattributes EnclosingMethod,InnerClasses,Signature,Exceptions,*Annotation*

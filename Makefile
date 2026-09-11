@@ -2,7 +2,7 @@
 #
 # Every command the project needs goes through a target here, so that local
 # runs and CI runs are identical. The Android side wraps ./gradlew; the Rust
-# side wraps cargo in backend-lib/, which lives in this repository.
+# side wraps cargo in the repository's Zcash and Wcash native crates.
 #
 # Run `make help` for the target list, and `make info` for the resolved
 # toolchain paths.
@@ -33,6 +33,7 @@ GRADLE ?= ./gradlew
 CARGO ?= cargo
 
 RUST_DIR := backend-lib
+WCASH_RUST_DIR := wcash-android-sdk
 
 # Only the demo app is flavored; the published library modules are not.
 NETWORK ?= Zcashmainnet
@@ -44,14 +45,16 @@ NETWORK ?= Zcashmainnet
 #   make test-instrumented MANAGED_DEVICE=pixel2Target
 MANAGED_DEVICE ?= pixel2Min
 
-# Scoped to the four modules CI covers. The unqualified task would also pull in
+# Scoped to the five modules CI covers. The unqualified task would also pull in
 # darkside-test-lib, which needs a live darkside server, and the demo-app
 # modules.
 ANDROID_TEST_MODULES := \
 	:sdk-lib:$(MANAGED_DEVICE)DebugAndroidTest \
 	:lightwallet-client-lib:$(MANAGED_DEVICE)DebugAndroidTest \
 	:sdk-incubator-lib:$(MANAGED_DEVICE)DebugAndroidTest \
-	:backend-lib:$(MANAGED_DEVICE)DebugAndroidTest
+	:backend-lib:$(MANAGED_DEVICE)DebugAndroidTest \
+	:wcash-android-sdk:$(MANAGED_DEVICE)DebugAndroidTest
+WCASH_CONSUMER_TEST := :wcash-sdk-consumer-test:$(MANAGED_DEVICE)ReleaseAndroidTest
 
 # maxConcurrentDevices=1 keeps a single emulator booted at a time so the
 # machine is not overwhelmed by four; swiftshader_indirect is the software
@@ -112,7 +115,7 @@ help: ## Ask for help!
 .PHONY: info
 info: ## Print resolved paths and tool versions
 	@echo "Network:      $(NETWORK)"
-	@echo "Rust crate:   $(RUST_DIR)"
+	@echo "Rust crates:  $(RUST_DIR), $(WCASH_RUST_DIR)"
 	@echo "JAVA_HOME:    $(if $(JAVA_HOME),$(JAVA_HOME),<none; using PATH>)"
 	@echo "ANDROID_HOME: $(if $(ANDROID_HOME),$(ANDROID_HOME),<not found>)"
 	@printf "Java:         "; \
@@ -136,6 +139,16 @@ build: ## Build every module in debug mode
 .PHONY: build-release
 build-release: ## Build every module in release mode
 	$(GRADLE) assembleRelease
+
+.PHONY: verify-wcash-release
+verify-wcash-release: ## Verify minified Wcash AAR API and native path boundaries
+	$(GRADLE) -PIS_MINIFY_SDK_ENABLED=true \
+		:wcash-android-sdk:verifyReleaseAarBoundaries
+	$(GRADLE) -PIS_MINIFY_SDK_ENABLED=false \
+		:wcash-sdk-consumer-test:assembleRelease
+	./wcash-sdk-consumer-test/scripts/verify-release-apk.sh \
+		wcash-sdk-consumer-test/build/outputs/apk/release/wcash-sdk-consumer-test-release.apk \
+		wcash-sdk-consumer-test/build/outputs/mapping/release/mapping.txt
 
 # The plain aggregates cover the Android side only, which is what most changes
 # touch. The *-all variants additionally cover the Rust crate.
@@ -225,7 +238,7 @@ ktlint-format: ## Apply Kotlin code style with ktlint
 
 .PHONY: lint-android
 lint-android: ## Static analysis with Android Lint
-	$(GRADLE) :sdk-lib:lintRelease :demo-app:lint$(NETWORK)Release
+	$(GRADLE) :sdk-lib:lintRelease :wcash-android-sdk:lintRelease :demo-app:lint$(NETWORK)Release
 
 .PHONY: check-properties
 check-properties: ## Validate the Gradle properties
@@ -243,7 +256,7 @@ test-unit: ## Run JVM unit tests for every module
 # the `aosp` system image for the device's API level.
 .PHONY: test-instrumented
 test-instrumented: ## Run instrumentation tests on a managed virtual device
-	$(GRADLE) $(ANDROID_TEST_MODULES) $(MANAGED_DEVICE_FLAGS)
+	$(GRADLE) $(ANDROID_TEST_MODULES) $(WCASH_CONSUMER_TEST) $(MANAGED_DEVICE_FLAGS)
 
 # Runs against Firebase Test Lab, so it needs FTL credentials and cannot run
 # offline. Present so the CI job has a target like every other one.
@@ -264,7 +277,7 @@ install-demo-app: ## Install the demo app on the connected device
 	$(GRADLE) :demo-app:install$(NETWORK)Debug
 
 # ---------------------------------------------------------------------------
-# Rust (backend-lib/)
+# Rust native crates (backend-lib/ and wcash-android-sdk/)
 # ---------------------------------------------------------------------------
 #
 # The cargo invocations mirror pull-request.yml exactly. --all-features
@@ -289,10 +302,12 @@ setup-rust: ## Install the Rust toolchain and Android targets
 .PHONY: build-rust
 build-rust: ## Build the Rust crate for the host (debug)
 	cd $(RUST_DIR) && $(CARGO) build
+	cd $(WCASH_RUST_DIR) && $(CARGO) build --locked
 
 .PHONY: build-rust-release
 build-rust-release: ## Build the Rust crate for the host (release)
 	cd $(RUST_DIR) && $(CARGO) build --release
+	cd $(WCASH_RUST_DIR) && $(CARGO) build --release --locked
 
 .PHONY: build-rust-android
 build-rust-android: ## Build the Rust JNI libs for all Android ABIs
@@ -300,33 +315,45 @@ build-rust-android: ## Build the Rust JNI libs for all Android ABIs
 		:backend-lib:cargoBuild \
 		:backend-lib:cargoBuildArm64 \
 		:backend-lib:cargoBuildX86 \
-		:backend-lib:cargoBuildX86_64
+		:backend-lib:cargoBuildX86_64 \
+		:wcash-android-sdk:cargoBuildArm \
+		:wcash-android-sdk:cargoBuildArm64 \
+		:wcash-android-sdk:cargoBuildX86 \
+		:wcash-android-sdk:cargoBuildX86_64
 
 .PHONY: check-rust
 check-rust: ## Type-check the Rust crate without building it
 	cd $(RUST_DIR) && $(CARGO) check --all-targets --all-features
+	cd $(WCASH_RUST_DIR) && $(CARGO) check --all-targets --locked
 
 .PHONY: test-rust
 test-rust: ## Run the Rust unit tests
 	cd $(RUST_DIR) && $(CARGO) test --all-features
+	cd $(WCASH_RUST_DIR) && $(CARGO) test --locked
 
 .PHONY: lint-rust
 lint-rust: ## Lint the Rust crate with clippy
 	cd $(RUST_DIR) && $(CARGO) clippy --tests --all-features -- \
 		-W clippy::all -D warnings
+	cd $(WCASH_RUST_DIR) && $(CARGO) clippy --tests --locked -- \
+		-W clippy::all -D warnings
 
 .PHONY: format-rust
 format-rust: ## Format the Rust crate with rustfmt
 	cd $(RUST_DIR) && $(CARGO) fmt --all
+	cd $(WCASH_RUST_DIR) && $(CARGO) fmt --all
 
 .PHONY: check-format-rust
 check-format-rust: ## Check the Rust formatting
 	cd $(RUST_DIR) && $(CARGO) fmt --all --check
+	cd $(WCASH_RUST_DIR) && $(CARGO) fmt --all --check
 
 .PHONY: deny-rust
-deny-rust: ## Check the Rust dependency graph against backend-lib/deny.toml (licences, sources)
+deny-rust: ## Check both Rust dependency graphs (licences, sources)
 	cd $(RUST_DIR) && $(CARGO) deny check licenses sources
+	cd $(WCASH_RUST_DIR) && $(CARGO) deny check licenses sources
 
 .PHONY: clean-rust
 clean-rust: ## Clean the Cargo build artifacts
 	cd $(RUST_DIR) && $(CARGO) clean
+	cd $(WCASH_RUST_DIR) && $(CARGO) clean
