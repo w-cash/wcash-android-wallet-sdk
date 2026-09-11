@@ -7,6 +7,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added the closed `WcashNetwork` identity model for Wcash Testnet and Regtest. It exposes their
+  frozen genesis hashes, transaction branch IDs, Ironwood activation height, node and compact
+  server names, storage namespaces, test ticker, and address namespaces. Wcash Mainnet remains
+  unavailable until its consensus identity is finalized. This metadata cannot yet be passed to
+  `Synchronizer` or the native backend.
 - Shielded voting: `voteSubmission(roundId, bundleIndex, proposalId)` returns `JniVoteSubmission`,
   the chain-ready fields needed to resend a cast-vote transaction before it confirms, without the
   helper-share payloads that go stale once the tree position is recorded.
