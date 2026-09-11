@@ -73,13 +73,10 @@ private const val SCHEDULED_SHARE_SUBMIT_AT_ENTROPY_BYTES = 32
  * module from `backend-lib` and would lose access along with every other consumer, which is why
  * this class stays a public class carrying an error-level deprecation instead.
  *
- * Whether the native library actually exports these JNI symbols in a given build depends on
- * `backend-lib/build.gradle.kts`'s `RUSTFLAGS` (the `--cfg zcash_voting` gate) and
- * `backend-lib/Cargo.toml`'s `zcash_voting`/`unstable-voting-circuits` entries — independent of
- * this annotation. If they disagree with a caller's expectation, calls here throw
- * [UnsatisfiedLinkError] rather than failing gracefully; `VotingSdk` callers should use its
- * `isAvailable()` probe rather than assuming this class is safe to call just because the
- * `@Suppress` compiles.
+ * The Wcash native library intentionally does not export these Zcash voting JNI symbols. Direct
+ * calls therefore throw [UnsatisfiedLinkError]. This Kotlin declaration is retained for source
+ * compatibility only; Wcash callers must use `VotingSdk.isAvailable()`, which returns `false`,
+ * before attempting to use the optional voting API.
  */
 @Keep
 @Suppress("TooManyFunctions", "LongParameterList")

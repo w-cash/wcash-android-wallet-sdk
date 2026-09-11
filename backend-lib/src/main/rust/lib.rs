@@ -114,7 +114,7 @@ mod migration_plan_cache;
 mod migration_send_max;
 mod tor;
 mod utils;
-mod voting;
+mod wcash_wallet;
 
 #[cfg(debug_assertions)]
 fn print_debug_state() {

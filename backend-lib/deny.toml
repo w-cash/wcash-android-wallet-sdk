@@ -50,14 +50,12 @@ ignore = true
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-# Keystone UR envelope crates, consumed from git (see the Keystone comment in Cargo.toml), and
-# the project's own upstream, so a temporary `[patch.crates-io]` pin against in-progress
-# librustzcash work (the commented template at the bottom of Cargo.toml) does not trip the
-# provenance check.
+# Keystone UR envelope crates, consumed from git (see the Keystone comment in Cargo.toml), and the
+# exact Wcash librustzcash fork used by the native wallet dependency graph.
 allow-git = [
     "https://github.com/KeystoneHQ/ur-rs",
     "https://github.com/KeystoneHQ/keystone-sdk-rust",
-    "https://github.com/zcash/librustzcash",
+    "https://github.com/w-cash/librustzcash",
 ]
 
 [bans]
