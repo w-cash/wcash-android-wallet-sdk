@@ -7,11 +7,14 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Added the closed `WcashNetwork` identity model for Wcash Testnet and Regtest. It exposes their
-  frozen genesis hashes, transaction branch IDs, Ironwood activation height, node and compact
-  server names, storage namespaces, test ticker, and address namespaces. Wcash Mainnet remains
-  unavailable until its consensus identity is finalized. This metadata cannot yet be passed to
-  `Synchronizer` or the native backend.
+- Added the isolated `wcash-android-sdk` artifact. Its `cash.w.sdk` API provides `WcashNetwork`,
+  `WcashWalletSeed`, `WcashAccountIndex`, `WcashIronwoodAddress`,
+  `WcashTransparentP2pkhAddress`, and `WcashWalletTool` for Rust-validated Wcash Testnet and
+  Regtest derivation and canonical address parsing. It derives both Ironwood receiving addresses
+  and transparent P2PKH coinbase addresses. `WcashWalletSeed.fromBip39SeedBytes` accepts exactly
+  the 64-byte BIP-39 PBKDF2 output, not mnemonic entropy; `WcashWalletSeed` must be closed after use
+  to overwrite its retained seed. Wcash Mainnet, synchronization, persistence, and transaction
+  creation are not available in this artifact.
 - Shielded voting: `voteSubmission(roundId, bundleIndex, proposalId)` returns `JniVoteSubmission`,
   the chain-ready fields needed to resend a cast-vote transaction before it confirms, without the
   helper-share payloads that go stale once the tree position is recorded.

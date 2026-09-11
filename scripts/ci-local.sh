@@ -16,9 +16,10 @@
 #   6. unit tests   -> test_android_modules_unit
 #   7. android lint -> static_analysis_android_lint
 #   8. demo app     -> demo_app_release_build
-#   9. androidTest  -> (approximation of) test_android_modules_wtf
+#   9. Wcash AAR    -> wcash_release_boundaries
+#  10. androidTest  -> (approximation of) test_android_modules_emulator
 #
-# Stage 9 uses a Gradle Managed Device (pixel2Target, SDK 36). It downloads an
+# Stage 10 uses a Gradle Managed Device (pixel2Target, SDK 36). It downloads an
 # AVD on first run (~1.5 GB) and is the slowest stage.
 #
 # Usage:
@@ -38,7 +39,7 @@
 #     it builds ~640 crates; later runs are incremental.
 #   - For stage 5, cargo-deny (`cargo install cargo-deny --locked`). The stage fails with
 #     that hint when it is missing, the same way CI would.
-#   - For stage 9, an Apple Silicon Mac needs the `aosp` SDK-36 system image.
+#   - For stage 10, an Apple Silicon Mac needs the `aosp` SDK-36 system image.
 
 set -euo pipefail
 
@@ -49,32 +50,29 @@ cd "${REPO_ROOT}"
 GRADLE="./gradlew"
 
 stage_shell() {
-    echo "==> [1/9] shell tests (release tooling tests)"
+    echo "==> [1/10] shell tests (release tooling tests)"
     ./scripts/tests/run-tests.sh
 }
 
 stage_detekt() {
-    echo "==> [2/9] detekt (static_analysis_detekt)"
+    echo "==> [2/10] detekt (static_analysis_detekt)"
     "${GRADLE}" detektAll
 }
 
 stage_ktlint() {
-    echo "==> [3/9] ktlint (static_analysis_ktlint)"
+    echo "==> [3/10] ktlint (static_analysis_ktlint)"
     "${GRADLE}" ktlint
 }
 
-# `--locked` is deliberately absent here and in CI: backend-lib/Cargo.lock
-# currently cannot satisfy Cargo.toml. Add it once the lockfile is reconciled.
+# `backend-lib` remains unlocked because its Cargo.lock currently cannot satisfy Cargo.toml.
+# The Wcash crate has an independently verified lockfile and the Make target enforces it.
 stage_rust() {
-    echo "==> [4/9] rust (test_rust_unit)"
-    (
-        cd "${REPO_ROOT}/backend-lib"
-        cargo test --all-features
-    )
+    echo "==> [4/10] rust (test_rust_unit)"
+    make test-rust
 }
 
 stage_deny() {
-    echo "==> [5/9] cargo deny (check_native_licenses)"
+    echo "==> [5/10] cargo deny (check_native_licenses)"
     if ! cargo --list | grep -q '^    deny\b'; then
         echo "error: cargo-deny is not installed. Install it with:" >&2
         echo "    cargo install cargo-deny --locked" >&2
@@ -84,29 +82,35 @@ stage_deny() {
 }
 
 stage_unit() {
-    echo "==> [6/9] unit tests (test_android_modules_unit)"
+    echo "==> [6/10] unit tests (test_android_modules_unit)"
     "${GRADLE}" test
 }
 
 stage_lint() {
-    echo "==> [7/9] android lint (static_analysis_android_lint)"
-    "${GRADLE}" :sdk-lib:lintRelease :demo-app:lintZcashmainnetRelease
+    echo "==> [7/10] android lint (static_analysis_android_lint)"
+    "${GRADLE}" :sdk-lib:lintRelease :wcash-android-sdk:lintRelease :demo-app:lintZcashmainnetRelease
 }
 
 stage_demoapp() {
-    echo "==> [8/9] demo app release build (demo_app_release_build)"
+    echo "==> [8/10] demo app release build (demo_app_release_build)"
     "${GRADLE}" assembleRelease
 }
 
+stage_wcash_release() {
+    echo "==> [9/10] Wcash minified release boundary checks"
+    make verify-wcash-release
+}
+
 stage_androidtest() {
-    echo "==> [9/9] android instrumentation tests (test_android_modules_wtf approximation)"
-    echo "    Note: CI uses testDebugWithEmulatorWtf (cloud). Local approximation runs the"
-    echo "    same tests on a Gradle managed Pixel 2 (SDK 36) virtual device."
+    echo "==> [10/10] android instrumentation tests (test_android_modules_emulator)"
+    echo "    Runs the same tests on a Gradle managed Pixel 2 (SDK 36) virtual device."
     "${GRADLE}" \
         :sdk-incubator-lib:pixel2TargetDebugAndroidTest \
         :sdk-lib:pixel2TargetDebugAndroidTest \
         :lightwallet-client-lib:pixel2TargetDebugAndroidTest \
-        :backend-lib:pixel2TargetDebugAndroidTest
+        :backend-lib:pixel2TargetDebugAndroidTest \
+        :wcash-android-sdk:pixel2TargetDebugAndroidTest \
+        :wcash-sdk-consumer-test:pixel2TargetReleaseAndroidTest
 }
 
 run_all() {
@@ -118,6 +122,7 @@ run_all() {
     stage_unit
     stage_lint
     stage_demoapp
+    stage_wcash_release
     stage_androidtest
 }
 
@@ -146,6 +151,7 @@ case "${1:-full}" in
     unit)         stage_unit ;;
     lint)         stage_lint ;;
     demoapp)      stage_demoapp ;;
+    wcash-release) stage_wcash_release ;;
     androidtest)  stage_androidtest ;;
     -h|--help|help)
         grep -E '^# ' "$0" | sed 's/^# \{0,1\}//'

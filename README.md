@@ -18,6 +18,18 @@ This is a beta build and is currently under active development. Please be advise
 # Zcash Android SDK
 This lightweight SDK connects Android to Zcash, allowing third-party Android apps to send and receive shielded transactions easily, securely and privately.
 
+## Wcash Android SDK
+
+This fork also contains an isolated, Wcash-only Android artifact under
+[`wcash-android-sdk`](wcash-android-sdk). It currently provides Testnet and Regtest network
+identity, Rust-validated seed handling, and canonical Ironwood address derivation and parsing.
+It also derives and strictly parses Wcash transparent P2PKH coinbase addresses. It does not alter
+the Zcash backend in `backend-lib` or the Zcash API in `sdk-lib`.
+
+Wcash Mainnet, synchronization, persistence, balances, and transactions are intentionally not
+claimed by this first artifact. See the [Wcash module documentation](wcash-android-sdk/README.md)
+for its exact supported surface and security constraints.
+
 Different sections of this repository documentation are oriented to different roles, specifically Consumers (you want to use the SDK) and Maintainers (you want to modify the SDK).
 
 Note: This SDK is designed to work with [lightwalletd](https://github.com/zcash-hackworks/lightwalletd).  As either a consumer of the SDK or developer, you'll need a lightwalletd instance to connect to.  These servers are maintained by the Zcash community.

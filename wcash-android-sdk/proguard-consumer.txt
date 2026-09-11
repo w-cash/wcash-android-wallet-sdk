@@ -1,0 +1,28 @@
+# JNI entry points are resolved by their binary class and method names from Rust.
+-keep class cash.w.sdk.internal.jni.WcashNativeBridge { *; }
+
+# A consuming application's whole-program R8 run must not expose, inline, merge, or remove the
+# semantic seed holder and its zeroization boundary. The SDK release gate tests these rules in a
+# separately minified consumer APK.
+-keep class cash.w.sdk.WcashWalletSeed { *; }
+-keep class cash.w.sdk.WcashSecretSeedBytes { *; }
+
+# Preserve the documented semantic API when a consuming wallet runs whole-program R8. This also
+# prevents access relaxation from turning private semantic constructors into callable factories.
+-keep public class cash.w.sdk.** { public protected *; }
+
+# Rust constructs this transport object directly through its JVM constructor.
+-keep class cash.w.sdk.internal.jni.JniWcashAddress {
+    <init>(java.lang.String,int);
+}
+
+# Rust constructs the transparent P2PKH transport object through this constructor.
+-keep class cash.w.sdk.internal.jni.JniWcashTransparentP2pkhAddress {
+    <init>(java.lang.String,int);
+}
+
+-keepclasseswithmembernames,includedescriptorclasses class cash.w.sdk.internal.jni.** {
+    native <methods>;
+}
+
+-keepattributes EnclosingMethod,InnerClasses,Signature,Exceptions,*Annotation*

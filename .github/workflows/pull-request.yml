@@ -219,6 +219,27 @@ jobs:
           name: Android Lint static analysis results
           path: ~/artifacts
 
+  wcash_release_boundaries:
+    needs: validate_gradle_wrapper
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        timeout-minutes: 1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Setup
+        id: setup
+        timeout-minutes: 30
+        uses: ./.github/actions/setup
+        with:
+          rust-cache: true
+      - name: Verify minified Wcash AAR boundaries
+        timeout-minutes: 45
+        run: make verify-wcash-release
+
   # Runs the Rust unit tests. static_analysis_clippy compiles them via --tests but never
   # executes them, so without this a failing test can sit unnoticed indefinitely.
   test_rust_unit:
@@ -421,8 +442,8 @@ jobs:
   # emulator job's budget for the same assemble work).
   #
   # The open question is whether it is worth restoring at all:
-  # test_android_modules_emulator now covers the same four modules on an in-runner
-  # Gradle Managed Device, and was added specifically to replace a cloud test
+  # test_android_modules_emulator now covers the Android libraries and Wcash consumer fixture on
+  # an in-runner Gradle Managed Device, and was added specifically to replace a cloud test
   # service. Running both means paying Firebase Test Lab and roughly half an hour
   # of CI for duplicate coverage -- against which FTL does test on real hardware,
   # which the emulator does not.
@@ -535,7 +556,7 @@ jobs:
           yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" "emulator"
       # pixel2Min is the Gradle Managed Device defined in
       # zcash-sdk.android-conventions.gradle.kts (Pixel 2, API ANDROID_MIN_SDK_VERSION).
-      # Scoped to the same four modules the former emulator.wtf job covered;
+      # Scoped to the Android libraries plus the minified Wcash consumer fixture;
       # the unqualified task would also pull in darkside-test-lib (needs a live
       # darkside server) and the demo-app modules. maxConcurrentDevices=1 keeps a
       # single emulator booted at a time so the runner is not overwhelmed by four

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:name=".WcashConsumerProbeApplication"
+        android:allowBackup="false"
+        android:label="Wcash SDK consumer probe"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false" />
+</manifest>
